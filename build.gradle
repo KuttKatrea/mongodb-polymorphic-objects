@@ -1,0 +1,86 @@
+apply plugin: 'java'
+apply plugin: 'maven'
+apply plugin: 'war'
+apply plugin: 'eclipse-wtp'
+apply plugin: 'net.ltgt.apt'
+
+group = 'net.katrea.polymorphic'
+version = hasProperty('VERSION') ? VERSION : '0.0.0'
+
+description = """MongoDB Polymorphic Objects"""
+
+project.ext.JAVA_COMPATIBILITY = 1.8
+project.ext.PROJECT_ENCODING = 'UTF-8'
+
+sourceCompatibility = JAVA_COMPATIBILITY
+targetCompatibility = JAVA_COMPATIBILITY
+
+repositories {
+  jcenter()
+}
+
+dependencies {
+
+  apt "org.immutables:value:2.4.4" // for annotation processor
+
+  compile 'org.immutables:value:2.4.4'
+
+  compile 'org.mongodb:mongo-java-driver:3.4.2'
+
+  compile 'com.fasterxml.jackson.core:jackson-core:2.8.8'
+  compile 'com.fasterxml.jackson.core:jackson-databind:2.8.8.1'
+
+  compile('org.mongojack:mongojack:2.7.0') {
+    exclude group: 'org.mongodb' // Included explicitly
+    exclude group: 'com.fasterxml.jackson.core' // Included explicitly
+  }
+
+  compile 'org.glassfish.jersey.containers:jersey-container-servlet:2.25.1'
+
+  compile 'org.slf4j:slf4j-api:1.7.25'
+  compile 'org.slf4j:slf4j-simple:1.7.25'
+
+  testCompile 'junit:junit:4.12'
+}
+
+afterEvaluate {
+  plugins.withType(JavaPlugin) {
+    sourceSets*.java.srcDirs*.each { it.mkdirs() }
+  }
+
+  plugins.withType(GroovyPlugin) {
+    sourceSets*.groovy.srcDirs*.each { it.mkdirs() }
+  }
+
+  plugins.withType(WarPlugin) {
+    webAppDir.mkdirs()
+  }
+
+  sourceSets*.resources.srcDirs*.each { it.mkdirs() }
+}
+
+task wrapper(type: Wrapper) { gradleVersion = '3.5' }
+
+// Encoding enforcement
+tasks.withType(JavaCompile) { options.encoding = PROJECT_ENCODING }
+
+// Eclipse configuration
+eclipseProject {
+  doLast {
+    File f = file('.settings/org.eclipse.core.resources.prefs')
+    f.write('eclipse.preferences.version=1\n')
+    f.append('encoding/<project>=' << PROJECT_ENCODING)
+  }
+}
+
+buildscript {
+  repositories {
+    maven {
+      url "https://plugins.gradle.org/m2/"
+    }
+  }
+
+  dependencies {
+    classpath 'net.ltgt.gradle:gradle-apt-plugin:0.10'
+  }
+}
